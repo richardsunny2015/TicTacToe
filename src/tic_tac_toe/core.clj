@@ -64,8 +64,23 @@
       (vertical-win? board player)
       (horizontal-win? board player)))
 
+(defn tie-game?
+  "Checks for tie game. Assumes that player-has-won? has been
+   run on both players already."
+  [board]
+  (->> board
+       (flatten)
+       (every? (partial contains? #{"X" "O"}))))
+
 (defn play
   []
   #_(loop [board starting-board
          x-player? true]
-    ))
+    (cond
+      (player-has-won? board "X")
+      (println "Congratulations for winning, Player 1!")
+
+      (player-has-won? board "O")
+      (println "Congratulations for winning, Player 2!")
+
+      )))

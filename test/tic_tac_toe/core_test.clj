@@ -54,3 +54,12 @@
                   bottom-horizontal
                   "O"))))))
 
+(deftest tie-game-test
+  (testing "Returns true if all spaces are used"
+    (is (true? (core/tie-game? [["X" "O" "X"]
+                                ["X" "O" "O"]
+                                ["O" "X" "X"]]))))
+  (testing "Returns false if there is still an empty space"
+    (is (false? (core/tie-game? [["X" 2 "X"]
+                                ["O" "O" "X"]
+                                ["X" "O" "O"]])))))
