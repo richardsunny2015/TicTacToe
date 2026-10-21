@@ -5,6 +5,9 @@
    [4 5 6]
    [7 8 9]])
 
+(def ^:const valid-players
+  #{"X" "O"})
+
 (defn board->str
   [board]
   (loop [s ""
@@ -70,12 +73,53 @@
   [board]
   (->> board
        (flatten)
-       (every? (partial contains? #{"X" "O"}))))
+       (every? (partial contains? valid-players))))
+
+(defn maybe-parse-int
+  [x]
+  (try
+    (Integer/parseInt x)
+    (catch Exception _)))
+
+(defn- invalid-space?
+  [board space]
+  (let [valid-spaces (->> board
+                          (flatten)
+                          (remove (partial contains? valid-players))
+                          (into #{}))]
+    (not (contains? valid-spaces space))))
+
+(defn- convert-space-to-row-and-col
+  [space]
+  [(quot (dec space) 3)
+   (mod (dec space) 3)])
+
+(defn play-turn
+  "Plays a turn of tic-tac-toe. Prints the current state of the board.
+   Asks player to choose space to mark. If player chooses an invalid space,
+   prints error message and replays the turn. Otherwise, updates board
+   with the space marked."
+  [board player]
+  (print "Enter space to mark with" player "> ")
+  (flush)
+  (let [space (-> (read-line)
+                  (maybe-parse-int))]
+    (println)
+    (if (or (nil? space)
+            (invalid-space? board space))
+      (do
+        (println "Invalid space chosen")
+        (println)
+        (println (board->str board))
+        (recur board player))
+
+      (assoc-in board (convert-space-to-row-and-col space) player))))
 
 (defn play
   []
-  #_(loop [board starting-board
+  (loop [board starting-board
          x-player? true]
+    (println (board->str board))
     (cond
       (player-has-won? board "X")
       (println "Congratulations for winning, Player 1!")
@@ -83,4 +127,10 @@
       (player-has-won? board "O")
       (println "Congratulations for winning, Player 2!")
 
-      )))
+      (tie-game? board)
+      (println "The game has ended in a tie.")
+
+      :else
+      (let [updated-board (play-turn board (if x-player? "X" "O"))]
+        (recur updated-board
+               (not x-player?))))))
