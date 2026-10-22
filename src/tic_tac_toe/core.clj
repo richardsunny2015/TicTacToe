@@ -94,16 +94,28 @@
   [(quot (dec space) 3)
    (mod (dec space) 3)])
 
+(defn- npc-selects-space
+  [board]
+  (->> board
+       (flatten)
+       (remove (partial contains? valid-players))
+       (shuffle)
+       (first)))
+
 (defn play-turn
   "Plays a turn of tic-tac-toe. Prints the current state of the board.
    Asks player to choose space to mark. If player chooses an invalid space,
    prints error message and replays the turn. Otherwise, updates board
    with the space marked."
-  [board player]
+  [board player npc?]
   (print "Enter space to mark with" player "> ")
   (flush)
-  (let [space (-> (read-line)
-                  (maybe-parse-int))]
+  (let [is-currently-npc? (and npc? (= player "O"))
+        space (if is-currently-npc?
+                (npc-selects-space board)
+
+                (-> (read-line)
+                    (maybe-parse-int)))]
     (println)
     (if (or (nil? space)
             (invalid-space? board space))
@@ -111,26 +123,43 @@
         (println "Invalid space chosen")
         (println)
         (println (board->str board))
-        (recur board player))
+        (recur board player npc?))
 
       (assoc-in board (convert-space-to-row-and-col space) player))))
 
+(defn- get-players
+  []
+  (print "How many players? > ")
+  (flush)
+  (let [num-of-players (maybe-parse-int (read-line))]
+    (if (or (nil? num-of-players)
+            (not (contains? #{1 2} num-of-players)))
+      (do
+        (println "Invalid number of players. Choose 1 or 2.")
+        (recur))
+      num-of-players)))
+
 (defn play
   []
-  (loop [board starting-board
-         x-player? true]
-    (println (board->str board))
-    (cond
-      (player-has-won? board "X")
-      (println "Congratulations for winning, Player 1!")
+  (let [num-of-players (get-players)
+        npc? (= 1 num-of-players)]
+    (loop [board starting-board
+           x-player? true]
+      (println (board->str board))
+      (cond
+        (player-has-won? board "X")
+        (println "Congratulations for winning, Player 1!")
 
-      (player-has-won? board "O")
-      (println "Congratulations for winning, Player 2!")
+        (player-has-won? board "O")
 
-      (tie-game? board)
-      (println "The game has ended in a tie.")
+        (if npc?
+          (println "The computer has won!")
+          (println "Congratulations for winning, Player 2!"))
 
-      :else
-      (let [updated-board (play-turn board (if x-player? "X" "O"))]
-        (recur updated-board
-               (not x-player?))))))
+        (tie-game? board)
+        (println "The game has ended in a tie.")
+
+        :else
+        (let [updated-board (play-turn board (if x-player? "X" "O") npc?)]
+          (recur updated-board
+                 (not x-player?)))))))
